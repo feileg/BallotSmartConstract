@@ -161,7 +161,15 @@ contract Ballot {
         ifVote_ = voters[msg.sender].voted;
     }
 
-    function getWeight(address addr) public view returns (uint weight_) {
+    function getWeight(
+        address addr
+    ) public view onlyOwner returns (uint weight_) {
         weight_ = voters[addr].weight;
+    }
+
+    function getVoterInfo(
+        address addr
+    ) public view onlyOwner returns (Voter memory voter_) {
+        voter_ = voters[addr];
     }
 }
