@@ -16,18 +16,21 @@ This project is built on Hardhat platform. It comes with a ballot contract, test
 2. create a folder for the ballot smart contract portion (i.e. you will need a peer folder for HTML frontend portion)
 3. open a new vs code window and open the folder
 4. clone github repository https://github.com/feileg/BallotSmartConstract.git
+5. install yarn on computer
 5. yarn init
 6. install hardhat:  yarn add --dev hardhat
 7. set up project by follow the prompts:  yarn hardhat
 8. install prettier plugin:  yarn add --dev prettier prettier-plugin-solidity
-9. install etherscan plugin:  yarn add --dev @nomiclabs/hardhat-etherscan
-10. other useful plugins: 
+9. install prettier extension using vscode
+10. install "live server" extension and "solidity" (yellow logo) extension using vscode
+11. install etherscan plugin:  yarn add --dev @nomiclabs/hardhat-etherscan
+12. other useful plugins: 
     - yarn add hardhat-gas-reporter --dev
     - yarn add solidity-coverage --dev
     - yarn add --dev @chainlink/contracts
     - yarn add --dev hardhat-deploy   (deploy plugin)
     - yarn add --dev @nomiclabs/hardhat-ethers@npm:hardhat-deploy-ethers ethers
-11. compile the contract:   yarn hardhat compile
-12. try deply:  yarn hardhat deploy
-13. run tests(optional):  yarn hardhat test
-14. start localhost hardhat node(which will run forever until ctrl^C):  yarn hardhat node
+13. compile the contract:   yarn hardhat compile
+14. try to deploy:  yarn hardhat deploy
+15. run tests(optional):  yarn hardhat test
+16. start localhost hardhat node(which will run forever until ctrl^C):  yarn hardhat node

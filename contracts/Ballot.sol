@@ -84,7 +84,8 @@ contract Ballot {
         require(!sender.voted, "You already voted.");
         require(to != msg.sender, "Self-delegation is disallowed.");
 
-        // ??? what if the to has no right to vote ???  need handle ???
+        // QUESTION: what if the person getting the delegated vote has no right to 
+        // vote? does this need to be handled?
         while (voters[to].delegate != address(0)) {
             to = voters[to].delegate;
 
