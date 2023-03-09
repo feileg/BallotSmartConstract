@@ -5,13 +5,14 @@ require("dotenv").config()
 require("solidity-coverage")
 require("hardhat-deploy")
 
-const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || ""
+const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY ||
+    "4G1W6STXEBC9T1G2A2N7SVNY2XG7RY2SK7"
 const GOERLI_RPC_URL =
     process.env.GOERLI_RPC_URL ||
-    "https://eth-mainnet.alchemyapi.io/v2/your-api-key"
+    "https://eth-goerli.g.alchemy.com/v2/tZqlp8nQHy68QVle8kJuvCLz0t3vq9OJ"
 const PRIVATE_KEY =
     process.env.PRIVATE_KEY ||
-    "0x11ee3108a03081fe260ecdc106554d09d9d1209bcafd46942b10e02943effc4a"
+    "9059cc19bcc2791e764a7f9962e8ffe74048335f423c095a06df9d5bff588f5a"
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {

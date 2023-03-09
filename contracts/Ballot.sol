@@ -11,7 +11,7 @@ contract Ballot {
         uint weight; // weight is accumulated by delegation
         bool voted; // if true, that person already voted
         address delegate; // person delegated to
-        uint vote; // index of the voted proposal
+        uint[] vote; // index of the voted proposal
     }
 
     struct Proposal {
@@ -26,6 +26,9 @@ contract Ballot {
     // always check voters[addr].weight if 0 to tell if the voter could vote
     mapping(address => Voter) public voters;
     Proposal[] public proposals;
+
+    uint[][] votes;
+    uint[] votecounts;
 
     // Modifiers: Modifiers can also be chained together, meaning that you can have
     // multiple modifiers on a single function. However, modifiers can only modify
@@ -84,7 +87,7 @@ contract Ballot {
         require(!sender.voted, "You already voted.");
         require(to != msg.sender, "Self-delegation is disallowed.");
 
-        // QUESTION: what if the person getting the delegated vote has no right to 
+        // QUESTION: what if the person getting the delegated vote has no right to
         // vote? does this need to be handled?
         while (voters[to].delegate != address(0)) {
             to = voters[to].delegate;
@@ -98,7 +101,8 @@ contract Ballot {
         if (delegate_.voted) {
             // If the delegate already voted,
             // directly add to the number of votes
-            proposals[delegate_.vote].voteCount += sender.weight;
+            uint voteIndex = findVote(delegate_.vote);
+            votecounts[voteIndex] += sender.weight;
         } else {
             // If the delegate did not vote yet,
             // add to her weight.
@@ -108,20 +112,41 @@ contract Ballot {
 
     /**
      * @dev Give your vote (including votes delegated to you) to proposal 'proposals[proposal].name'.
-     * @param proposal index of proposal in the proposals array
+     * @param proposals_ the voting sequence
      */
-    function vote(uint proposal) public {
+    function vote(uint[] memory proposals_) public {
         Voter storage sender = voters[msg.sender];
         require(sender.weight != 0, "Has no right to vote.");
         require(!sender.voted, "Already voted.");
         sender.voted = true;
-        sender.vote = proposal;
+        sender.vote = proposals_;
 
-        require(proposal < proposals.length, "Invalid proposal voted.");
         // If 'proposal' is out of the range of the array,
         // this will throw automatically and revert all
         // changes.
-        proposals[proposal].voteCount += sender.weight;
+        uint voteIndex = findVote(proposals_);
+        if(voteIndex != votes.length+1){
+            votecounts[voteIndex] += sender.weight;
+        } else {
+            votes.push(proposals_);
+            votecounts.push(sender.weight);
+        }
+    }
+
+    function findVote(uint[] memory proposals_) private view returns (uint){
+        for(uint j = 0; j < votes.length; j++){
+            bool mismatch = false;
+            for(uint i = 0; i < votes[j].length; i++){
+                if(votes[j][i] != proposals_[i]){
+                    mismatch = true;
+                    break;
+                }
+            }
+            if(!mismatch){
+                return j;
+            }
+        }
+        return votes.length+1;
     }
 
     /**
@@ -129,11 +154,50 @@ contract Ballot {
      * @return winningProposal_ index of winning proposal in the proposals array
      */
     function winningProposal() public view returns (uint winningProposal_) {
-        uint winningVoteCount = 0;
-        for (uint p = 0; p < proposals.length; p++) {
-            if (proposals[p].voteCount > winningVoteCount) {
-                winningVoteCount = proposals[p].voteCount;
-                winningProposal_ = p;
+        bool[] memory inRunning = new bool[](proposals.length);
+        Proposal[] memory proposals_ = proposals;
+        for(uint i = 0; i < proposals.length; i++){
+            inRunning[i] = true;
+        }
+        uint count = 0;
+        while(count < proposals_.length-1){
+            for(uint i = 0; i < votes.length; i++){
+                for(uint j = 0; j < votes[i].length; j++){
+                    if(inRunning[votes[i][j]]){
+                        proposals_[votes[i][j]].voteCount += votecounts[i]; //tallys up the # of first place votes for each choice
+                        break;
+                    }
+                }
+            }
+            uint losingVoteCount = 1000;
+            for(uint i = 0; i < proposals_.length; i++){
+                if(proposals_[i].voteCount < losingVoteCount && inRunning[i]){
+                    losingVoteCount = proposals[i].voteCount; //looks for proposal with least votes
+                }
+            }
+            for(uint i = 0; i < proposals_.length; i++){
+                if(proposals_[i].voteCount == losingVoteCount){
+                    count++;
+                    inRunning[i] = false; //if proposal has least # of votes, it is no longer in contention
+                }
+            }
+
+            for(uint i = 0; i < proposals_.length; i++){
+                proposals_[i].voteCount = 0; //resets all votes
+            }
+            bool flag = false;
+            for(uint i = 0; i < proposals_.length; i++){
+                if(inRunning[i]){
+                    flag = true;
+                }
+            }
+            if(flag == false){
+                return proposals_.length; //tie edgecase
+            }
+        }
+        for(uint i = 0; i < inRunning.length; i++){
+            if(inRunning[i]){
+                return i;
             }
         }
     }
@@ -143,7 +207,11 @@ contract Ballot {
      * @return winnerName_ the name of the winner
      */
     function winnerName() public view returns (bytes32 winnerName_) {
-        winnerName_ = proposals[winningProposal()].name;
+        uint winning = winningProposal();
+        if(winning == proposals.length){
+            return "Tie";
+        }
+        winnerName_ = proposals[winning].name;
     }
 
     function getProposalName(
@@ -153,9 +221,31 @@ contract Ballot {
         option_ = proposals[index].name;
     }
 
-    function getProposalVote(uint256 index) public view returns (uint count_) {
-        require(index < proposals.length, "Invalid proposal index.");
-        count_ = proposals[index].voteCount;
+    function getUniqueVoteCount() public view returns (uint256 count_) {
+        count_ = votes.length;
+    }
+
+    function getVoteDetail(
+        uint256 index
+    ) public view returns (uint[] memory option_) {
+        require(index < votes.length, "Invalid vote index.");
+        option_ = votes[index];
+    }
+
+    function getVoteCountByIndex(
+        uint256 index
+    ) public view returns (uint256 option_) {
+        require(index < votes.length, "Invalid vote index.");
+        option_ = votecounts[index];
+    }
+
+    function getProposalVote(uint[] memory proposals_) public view returns (uint count_) {
+        uint voteIndex = findVote(proposals_);
+        if(voteIndex != votes.length+1){
+            return votecounts[voteIndex];
+        } else {
+            return 0;
+        }
     }
 
     function ifVoted() public view returns (bool ifVote_) {

@@ -19,8 +19,8 @@ describe("Ballot", function () {
         // Ethereum account. getSigners helps getting a list of the accounts in the node
         // we're connected to, which is probably the Hardhat Network.
         // const accounts = await ethers.getSigners()  // for hardhat, the 10 fake accounts
-        // const accountZero = account[0]
-        ;[owner, addr1, addr2] = await ethers.getSigners()
+        // const accountZero = account[0];
+        [owner, addr1, addr2] = await ethers.getSigners()
         deployer = (await getNamedAccounts()).deployer
         await deployments.fixture(["all"]) // control tags, all means deploy everything
         ballot = await ethers.getContract("Ballot", deployer)
@@ -36,7 +36,7 @@ describe("Ballot", function () {
             assert.equal(web3.utils.hexToUtf8(response), "0-basketball")
         })
         it("access invalid proposal index", async function () {
-            const responseVote = await ballot.getProposalVote(3)
+            const responseVote = await ballot.getProposalVote([3])
             assert.equal(responseVote, 0)
             await expect(ballot.getProposalName(9)).to.be.revertedWith(
                 "Invalid proposal index."
@@ -52,37 +52,32 @@ describe("Ballot", function () {
             //    "Has no right to vote."
             //)
         })
-        it("Aothorize to vote", async function () {
-            const response = await ballot.getProposalVote(0)
+        it("Authorize to vote", async function () {
+            const response = await ballot.getProposalVote([0])
             assert.equal(response.toString(), "0")
             await ballot.giveRightToVote(addr1.address)
-            await ballot.connect(addr1).vote(0)
-            const response1 = await ballot.getProposalVote(0)
+            await ballot.connect(addr1).vote([0])
+            const response1 = await ballot.getProposalVote([0])
             assert.equal(response1.toString(), "1")
-        })
-        it("Fails if vote invalid proposal", async function () {
-            await expect(ballot.vote(9)).to.be.revertedWith(
-                "Invalid proposal voted."
-            )
         })
         it("vote succeed", async function () {
             const ifVoted = await ballot.ifVoted()
             assert.equal(ifVoted, false)
-            await ballot.vote(0)
-            const response = await ballot.getProposalVote(0)
+            await ballot.vote([0])
+            const response = await ballot.getProposalVote([0])
             assert.equal(response.toString(), "1")
-            const response1 = await ballot.getProposalVote(2)
+            const response1 = await ballot.getProposalVote([2])
             assert.equal(response1.toString(), "0")
             const ifVotedAfter = await ballot.ifVoted()
             assert.equal(ifVotedAfter, true)
             // Fails if vote already", async function () {
-            await expect(ballot.vote(0)).to.be.revertedWith("Already voted.")
+            await expect(ballot.vote([0])).to.be.revertedWith("Already voted.")
         })
     })
 
     describe("delegate", function () {
         it("Fails if already voted", async function () {
-            await ballot.vote(0)
+            await ballot.vote([0])
             await expect(ballot.delegate(addr1.address)).to.be.revertedWith(
                 "You already voted."
             )
@@ -94,8 +89,8 @@ describe("Ballot", function () {
             assert.equal(ifVoted, true)
             const weight = await ballot.getWeight(addr1.address)
             assert.equal(weight.toString(), "2")
-            await ballot.connect(addr1).vote(0)
-            const response = await ballot.getProposalVote(0)
+            await ballot.connect(addr1).vote([0])
+            const response = await ballot.getProposalVote([0])
             assert.equal(response.toString(), "2")
         })
     })
